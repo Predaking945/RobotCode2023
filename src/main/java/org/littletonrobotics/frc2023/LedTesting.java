@@ -15,7 +15,7 @@ public class LedTesting {
   AddressableLED led = new AddressableLED(0); // PWM port 0
   AddressableLEDBuffer ledBuffer = new AddressableLEDBuffer(60);
 
-  public void rainbow(int rainbowFirstPixelHue) {
+  private void rainbow(int rainbowFirstPixelHue) {
     for (var i = 0; i < ledBuffer.getLength(); i++) {
       final var hue = rainbowFirstPixelHue + (i * 180 / ledBuffer.getLength()) % 180;
       ledBuffer.setHSV(i, hue, 255, 128);
@@ -27,7 +27,25 @@ public class LedTesting {
     led.setData(ledBuffer);
   }
 
+  private void yellow(int time) {
+    var Time = time % 60;
+    var time2 = Time;
+    if (Time < 5) {
+      time2 += 55;
+    } else {
+      time2 -= 5;
+    }
+    for (var i = 0; i < ledBuffer.getLength(); i++) {
+      ledBuffer.setRGB(Time, 255, 230, 0);
+      ledBuffer.setRGB(time2, 0, 0, 0);
+    }
+    led.setLength(ledBuffer.getLength());
+    led.start();
+    led.setData(ledBuffer);
+  }
+
   public void periodic() {
-    rainbow((int) (Timer.getFPGATimestamp() * 20));
+    // rainbow((int) (Timer.getFPGATimestamp() * 20));
+    yellow((int) (Timer.getFPGATimestamp() * 20));
   }
 }
