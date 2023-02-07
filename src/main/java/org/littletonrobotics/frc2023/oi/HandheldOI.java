@@ -37,6 +37,34 @@ public class HandheldOI {
     return dummyTrigger;
   }
 
+  public Trigger getArmTest1() {
+    return dummyTrigger;
+  }
+
+  public Trigger getArmTest2() {
+    return dummyTrigger;
+  }
+
+  public Trigger getArmTest3() {
+    return dummyTrigger;
+  }
+
+  public Trigger getArmTest4() {
+    return dummyTrigger;
+  }
+
+  public Trigger getArmTest5() {
+    return dummyTrigger;
+  }
+
+  public double getArmX() {
+    return 0.0;
+  }
+
+  public double getArmY() {
+    return 0.0;
+  }
+
   public void setDriverRumble(double percent) {}
 
   public void setOperatorRumble(double percent) {}

@@ -13,9 +13,9 @@ import org.littletonrobotics.frc2023.util.Alert;
 import org.littletonrobotics.frc2023.util.Alert.AlertType;
 
 public final class Constants {
-  private static final RobotType robot = RobotType.ROBOT_2023P;
+  private static final RobotType robot = RobotType.ROBOT_SIMBOT;
   public static final double loopPeriodSecs = 0.02;
-  public static final boolean tuningMode = false;
+  public static final boolean tuningMode = true;
 
   private static final Alert invalidRobotAlert =
       new Alert("Invalid robot selected, using competition robot as default.", AlertType.ERROR);

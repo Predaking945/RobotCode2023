@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2023;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -14,6 +15,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import java.util.List;
 import org.littletonrobotics.frc2023.Constants.Mode;
 import org.littletonrobotics.frc2023.commands.DriveTrajectory;
@@ -28,10 +30,12 @@ import org.littletonrobotics.frc2023.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2023.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2023.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2023.subsystems.arm.Arm;
+import org.littletonrobotics.frc2023.subsystems.arm.Arm.ArmPose;
 import org.littletonrobotics.frc2023.subsystems.arm.ArmIO;
 import org.littletonrobotics.frc2023.subsystems.arm.ArmIOSim;
 import org.littletonrobotics.frc2023.subsystems.arm.ArmSolverIO;
 import org.littletonrobotics.frc2023.subsystems.arm.ArmSolverIOKairos;
+import org.littletonrobotics.frc2023.subsystems.arm.IntakeVisualizer;
 import org.littletonrobotics.frc2023.subsystems.drive.Drive;
 import org.littletonrobotics.frc2023.subsystems.drive.GyroIO;
 import org.littletonrobotics.frc2023.subsystems.drive.GyroIOPigeon2;
@@ -124,8 +128,20 @@ public class RobotContainer {
             () -> handheldOI.getLeftDriveX(),
             () -> handheldOI.getLeftDriveY(),
             () -> handheldOI.getRightDriveY(),
-            () -> overrideOI.getRobotRelative()));
+            () -> true));
+    arm.setDefaultCommand(
+        new RunCommand(
+            () -> {
+              var x = MathUtil.applyDeadband(handheldOI.getArmX(), 0.05);
+              var y = MathUtil.applyDeadband(handheldOI.getArmY(), 0.05);
+              arm.shiftPose(
+                  new Translation2d(
+                      Constants.loopPeriodSecs * Math.copySign(x * x, x),
+                      Constants.loopPeriodSecs * Math.copySign(y * y, y)));
+            },
+            arm));
     aprilTagVision.setDataInterfaces(drive::getPose, drive::addVisionData);
+    new IntakeVisualizer(arm::cubeIntakeShouldExtend, arm::coneIntakeShouldExtend);
 
     // Set up auto routines
     autoChooser.addDefaultOption("Do Nothing", null);
@@ -149,6 +165,19 @@ public class RobotContainer {
                         Waypoint.fromHolonomicPose(new Pose2d()),
                         Waypoint.fromHolonomicPose(
                             new Pose2d(3.0, 0.0, Rotation2d.fromDegrees(45.0)))))));
+
+    autoChooser.addOption(
+        "Arm Test (Forward)", new InstantCommand(() -> arm.setPose(ArmPose.Preset.FORWARD), arm));
+    autoChooser.addOption(
+        "Arm Test (Backward)", new InstantCommand(() -> arm.setPose(ArmPose.Preset.BACKWARD), arm));
+    autoChooser.addOption(
+        "Arm Test (Forward, Up)",
+        new InstantCommand(() -> arm.setPose(ArmPose.Preset.FORWARD_UP), arm));
+    autoChooser.addOption(
+        "Arm Test (Backward, Up)",
+        new InstantCommand(() -> arm.setPose(ArmPose.Preset.BACKWARD_UP), arm));
+    autoChooser.addOption(
+        "Arm Test (Homed)", new InstantCommand(() -> arm.setPose(ArmPose.Preset.HOMED), arm));
 
     // Alert if in tuning mode
     if (Constants.tuningMode) {
@@ -190,6 +219,22 @@ public class RobotContainer {
             .toPose2d()
             .transformBy(new Transform2d(new Translation2d(1.0, 0.0), new Rotation2d()));
     handheldOI.getDriverAssist().whileTrue(new HoldPose(drive, target));
+
+    handheldOI
+        .getArmTest1()
+        .onTrue(new InstantCommand(() -> arm.setPose(ArmPose.Preset.BACKWARD), arm));
+    handheldOI
+        .getArmTest2()
+        .onTrue(new InstantCommand(() -> arm.setPose(ArmPose.Preset.FORWARD), arm));
+    handheldOI
+        .getArmTest3()
+        .onTrue(new InstantCommand(() -> arm.setPose(ArmPose.Preset.FORWARD_UP), arm));
+    handheldOI
+        .getArmTest4()
+        .onTrue(new InstantCommand(() -> arm.setPose(ArmPose.Preset.HYBRID), arm));
+    handheldOI
+        .getArmTest5()
+        .onTrue(new InstantCommand(() -> arm.setPose(ArmPose.Preset.HOMED), arm));
 
     // *** OPERATOR CONTROLS ***
   }

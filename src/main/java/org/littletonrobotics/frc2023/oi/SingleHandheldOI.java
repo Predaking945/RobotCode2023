@@ -31,12 +31,13 @@ public class SingleHandheldOI extends HandheldOI {
 
   @Override
   public double getRightDriveX() {
-    return -controller.getRightY();
+    return 0.0;
   }
 
   @Override
   public double getRightDriveY() {
-    return -controller.getRightX();
+    return (controller.getHID().getRawButton(7) ? 0.3 : 0.0)
+        + (controller.getHID().getRawButton(8) ? -0.3 : 0.0);
   }
 
   @Override
@@ -44,10 +45,38 @@ public class SingleHandheldOI extends HandheldOI {
     return controller.leftBumper();
   }
 
-  @Override
-  public Trigger getResetGyro() {
-    return controller.start().or(controller.back());
+  public Trigger getArmTest1() {
+    return controller.button(1);
   }
+
+  public Trigger getArmTest2() {
+    return controller.button(2);
+  }
+
+  public Trigger getArmTest3() {
+    return controller.button(3);
+  }
+
+  public Trigger getArmTest4() {
+    return controller.button(4);
+  }
+
+  public Trigger getArmTest5() {
+    return controller.rightBumper();
+  }
+
+  public double getArmX() {
+    return controller.getRawAxis(2);
+  }
+
+  public double getArmY() {
+    return -controller.getRawAxis(3);
+  }
+
+  // @Override
+  // public Trigger getResetGyro() {
+  //   return controller.start().or(controller.back());
+  // }
 
   @Override
   public void setDriverRumble(double percent) {
