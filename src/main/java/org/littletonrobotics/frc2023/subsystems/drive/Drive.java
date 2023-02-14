@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.Arrays;
 import java.util.List;
 import org.littletonrobotics.frc2023.Constants;
+import org.littletonrobotics.frc2023.subsystems.drive.GyroIO.GyroIOInputs;
 import org.littletonrobotics.frc2023.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2023.util.PoseEstimator;
 import org.littletonrobotics.frc2023.util.PoseEstimator.TimestampedVisionUpdate;
@@ -240,6 +241,16 @@ public class Drive extends SubsystemBase {
   /** Returns the current odometry rotation. */
   public Rotation2d getRotation() {
     return poseEstimator.getLatestPose().getRotation();
+  }
+
+  public Rotation2d getRollRotation()
+  {
+    return Rotation2d.fromRadians(gyroInputs.rollPositionRad);
+  }
+
+  public Rotation2d getPitchRotation()
+  {
+    return Rotation2d.fromRadians(gyroInputs.pitchPositionRad);  
   }
 
   /** Resets the current odometry pose. */
