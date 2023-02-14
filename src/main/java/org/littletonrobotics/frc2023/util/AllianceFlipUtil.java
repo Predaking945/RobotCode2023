@@ -17,7 +17,7 @@ import org.littletonrobotics.frc2023.FieldConstants;
 import org.littletonrobotics.frc2023.util.trajectory.RotationSequence;
 
 /**
- * Utility funcitons for flipping from the blue to red alliance. By default, all translations and
+ * Utility functions for flipping from the blue to red alliance. By default, all translations and
  * poses in {@link FieldConstants} are stored with the origin at the rightmost point on the blue
  * alliance wall.
  */
@@ -28,6 +28,15 @@ public class AllianceFlipUtil {
       return new Translation2d(FieldConstants.fieldLength - translation.getX(), translation.getY());
     } else {
       return translation;
+    }
+  }
+
+  /** Flips an x coordinate to the correct side of the field based on the current alliance color. */
+  public static double apply(double xCoordinate) {
+    if (shouldFlip()) {
+      return FieldConstants.fieldLength - xCoordinate;
+    } else {
+      return xCoordinate;
     }
   }
 

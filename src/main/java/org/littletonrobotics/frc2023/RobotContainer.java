@@ -9,32 +9,59 @@ package org.littletonrobotics.frc2023;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.List;
 import org.littletonrobotics.frc2023.Constants.Mode;
+import org.littletonrobotics.frc2023.commands.DriveToNode;
+import org.littletonrobotics.frc2023.commands.DriveToSubstation;
 import org.littletonrobotics.frc2023.commands.DriveTrajectory;
 import org.littletonrobotics.frc2023.commands.DriveWithJoysticks;
+import org.littletonrobotics.frc2023.commands.EjectHeld;
 import org.littletonrobotics.frc2023.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2023.commands.FeedForwardCharacterization.FeedForwardCharacterizationData;
-import org.littletonrobotics.frc2023.commands.HoldPose;
-import org.littletonrobotics.frc2023.oi.HandheldOI;
-import org.littletonrobotics.frc2023.oi.OISelector;
-import org.littletonrobotics.frc2023.oi.OverrideOI;
+import org.littletonrobotics.frc2023.commands.IntakeAlongFloor;
+import org.littletonrobotics.frc2023.commands.IntakeConeHandoff;
+import org.littletonrobotics.frc2023.commands.IntakeCubeHandoff;
+import org.littletonrobotics.frc2023.commands.IntakeSubstation;
+import org.littletonrobotics.frc2023.commands.MoveArmWithJoysticks;
+import org.littletonrobotics.frc2023.commands.RaiseArmToScore;
 import org.littletonrobotics.frc2023.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2023.subsystems.apriltagvision.AprilTagVisionIO;
-import org.littletonrobotics.frc2023.subsystems.apriltagvision.AprilTagVisionIONorthstar;
+import org.littletonrobotics.frc2023.subsystems.arm.Arm;
+import org.littletonrobotics.frc2023.subsystems.arm.ArmIO;
+import org.littletonrobotics.frc2023.subsystems.arm.ArmIOSim;
+import org.littletonrobotics.frc2023.subsystems.arm.ArmPose;
+import org.littletonrobotics.frc2023.subsystems.arm.ArmSolverIO;
+import org.littletonrobotics.frc2023.subsystems.arm.ArmSolverIOKairos;
+import org.littletonrobotics.frc2023.subsystems.coneintake.ConeIntake;
+import org.littletonrobotics.frc2023.subsystems.coneintake.ConeIntakeIO;
+import org.littletonrobotics.frc2023.subsystems.coneintake.ConeIntakeIOSim;
+import org.littletonrobotics.frc2023.subsystems.cubeintake.CubeIntake;
+import org.littletonrobotics.frc2023.subsystems.cubeintake.CubeIntakeIO;
+import org.littletonrobotics.frc2023.subsystems.cubeintake.CubeIntakeIOSim;
 import org.littletonrobotics.frc2023.subsystems.drive.Drive;
 import org.littletonrobotics.frc2023.subsystems.drive.GyroIO;
 import org.littletonrobotics.frc2023.subsystems.drive.GyroIOPigeon2;
 import org.littletonrobotics.frc2023.subsystems.drive.ModuleIO;
 import org.littletonrobotics.frc2023.subsystems.drive.ModuleIOSim;
 import org.littletonrobotics.frc2023.subsystems.drive.ModuleIOSparkMax;
+import org.littletonrobotics.frc2023.subsystems.gripper.Gripper;
+import org.littletonrobotics.frc2023.subsystems.gripper.GripperIO;
+import org.littletonrobotics.frc2023.subsystems.objectivetracker.NodeSelectorIO;
+import org.littletonrobotics.frc2023.subsystems.objectivetracker.NodeSelectorIOServer;
+import org.littletonrobotics.frc2023.subsystems.objectivetracker.ObjectiveTracker;
+import org.littletonrobotics.frc2023.subsystems.objectivetracker.ObjectiveTracker.Direction;
+import org.littletonrobotics.frc2023.subsystems.objectivetracker.ObjectiveTracker.GamePiece;
 import org.littletonrobotics.frc2023.util.Alert;
 import org.littletonrobotics.frc2023.util.Alert.AlertType;
+import org.littletonrobotics.frc2023.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2023.util.OverrideSwitches;
 import org.littletonrobotics.frc2023.util.SparkMaxBurnManager;
 import org.littletonrobotics.frc2023.util.trajectory.Waypoint;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -43,11 +70,23 @@ public class RobotContainer {
 
   // Subsystems
   private Drive drive;
+  private Arm arm;
+  private Gripper gripper;
+  private CubeIntake cubeIntake;
+  private ConeIntake coneIntake;
   private AprilTagVision aprilTagVision;
+  private ObjectiveTracker objectiveTracker;
 
   // OI objects
-  private OverrideOI overrideOI = new OverrideOI();
-  private HandheldOI handheldOI = new HandheldOI();
+  private CommandXboxController driver = new CommandXboxController(0);
+  private CommandXboxController operator = new CommandXboxController(1);
+  private OverrideSwitches overrides = new OverrideSwitches(5);
+  private Alert driverDisconnected =
+      new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
+  private Alert operatorDisconnected =
+      new Alert("Operator controller disconnected (port 1).", AlertType.WARNING);
+  private Alert overrideDisconnected =
+      new Alert("Override controller disconnected (port 5).", AlertType.INFO);
 
   // Choosers
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -70,7 +109,7 @@ public class RobotContainer {
                   new ModuleIOSparkMax(1),
                   new ModuleIOSparkMax(2),
                   new ModuleIOSparkMax(3));
-          aprilTagVision = new AprilTagVision(new AprilTagVisionIONorthstar("northstar"));
+          objectiveTracker = new ObjectiveTracker(new NodeSelectorIOServer());
           break;
         case ROBOT_SIMBOT:
           drive =
@@ -80,6 +119,10 @@ public class RobotContainer {
                   new ModuleIOSim(),
                   new ModuleIOSim(),
                   new ModuleIOSim());
+          arm = new Arm(new ArmIOSim(), new ArmSolverIOKairos(1));
+          cubeIntake = new CubeIntake(new CubeIntakeIOSim());
+          coneIntake = new ConeIntake(new ConeIntakeIOSim());
+          objectiveTracker = new ObjectiveTracker(new NodeSelectorIOServer());
           break;
       }
     }
@@ -94,6 +137,18 @@ public class RobotContainer {
               new ModuleIO() {},
               new ModuleIO() {});
     }
+    if (arm == null) {
+      arm = new Arm(new ArmIO() {}, new ArmSolverIO() {});
+    }
+    if (gripper == null) {
+      gripper = new Gripper(new GripperIO() {});
+    }
+    if (cubeIntake == null) {
+      cubeIntake = new CubeIntake(new CubeIntakeIO() {});
+    }
+    if (coneIntake == null) {
+      coneIntake = new ConeIntake(new ConeIntakeIO() {});
+    }
     if (aprilTagVision == null) {
       // In replay, match the number of instances for each robot
       switch (Constants.getRobot()) {
@@ -105,15 +160,14 @@ public class RobotContainer {
           break;
       }
     }
+    if (objectiveTracker == null) {
+      objectiveTracker = new ObjectiveTracker(new NodeSelectorIO() {});
+    }
 
     // Set up subsystems
-    drive.setDefaultCommand(
-        new DriveWithJoysticks(
-            drive,
-            () -> handheldOI.getLeftDriveX(),
-            () -> handheldOI.getLeftDriveY(),
-            () -> handheldOI.getRightDriveY(),
-            () -> overrideOI.getRobotRelative()));
+    arm.setOverrides(() -> overrides.getDriverSwitch(1), () -> overrides.getOperatorSwitch(2));
+    cubeIntake.setForceExtendSupplier(arm::cubeIntakeShouldExtend);
+    coneIntake.setForceExtendSupplier(arm::coneIntakeShouldExtend);
     aprilTagVision.setDataInterfaces(drive::getPose, drive::addVisionData);
 
     // Set up auto routines
@@ -144,32 +198,116 @@ public class RobotContainer {
       new Alert("Tuning mode active, do not use in competition.", AlertType.INFO).set(true);
     }
 
-    // Instantiate OI classes and bind buttons
-    updateOI();
+    // Bind driver and operator controls
+    bindControls();
   }
 
-  /**
-   * This method scans for any changes to the connected joystick. If anything changed, it creates
-   * new OI objects and binds all of the buttons to commands.
-   */
-  public void updateOI() {
-    if (!OISelector.didJoysticksChange()) {
-      return;
-    }
+  /** Updates the alerts for disconnected controllers. */
+  public void checkControllers() {
+    driverDisconnected.set(
+        !DriverStation.isJoystickConnected(driver.getHID().getPort())
+            || !DriverStation.getJoystickIsXbox(driver.getHID().getPort()));
+    operatorDisconnected.set(
+        !DriverStation.isJoystickConnected(operator.getHID().getPort())
+            || !DriverStation.getJoystickIsXbox(operator.getHID().getPort()));
+    overrideDisconnected.set(!overrides.isConnected());
+  }
 
-    CommandScheduler.getInstance().getActiveButtonLoop().clear();
-    overrideOI = OISelector.findOverrideOI();
-    handheldOI = OISelector.findHandheldOI();
+  /** Binds the driver and operator controls. */
+  public void bindControls() {
+    // Rely on our custom alerts for disconnected controllers
+    DriverStation.silenceJoystickConnectionWarning(true);
 
     // *** DRIVER CONTROLS ***
-    var target =
-        FieldConstants.aprilTags
-            .get(2)
-            .toPose2d()
-            .transformBy(new Transform2d(new Translation2d(1.0, 0.0), new Rotation2d()));
-    handheldOI.getDriverAssist().whileTrue(new HoldPose(drive, target));
+
+    // Drive controls
+    drive.setDefaultCommand(
+        new DriveWithJoysticks(
+            drive,
+            () -> -driver.getLeftY(),
+            () -> -driver.getLeftX(),
+            () -> -driver.getRightX(),
+            () -> overrides.getDriverSwitch(0)));
+    driver
+        .start()
+        .or(driver.back())
+        .onTrue(
+            Commands.runOnce(
+                    () -> {
+                      drive.setPose(
+                          new Pose2d(
+                              drive.getPose().getTranslation(),
+                              AllianceFlipUtil.apply(new Rotation2d())));
+                    })
+                .ignoringDisable(true));
+
+    // Auto align controls
+    driver.leftTrigger().whileTrue(new DriveToSubstation(drive));
+    var raiseArm = new RaiseArmToScore(arm, drive, objectiveTracker);
+    var driveToNode = new DriveToNode(drive, objectiveTracker);
+    driver
+        .y()
+        .whileTrue(
+            new WaitUntilCommand(() -> raiseArm.atGoal() && driveToNode.atGoal())
+                .deadlineWith(raiseArm, driveToNode)
+                .andThen(gripper.ejectCommand())
+                .finallyDo((interrupted) -> arm.runPath(ArmPose.Preset.HOMED)));
 
     // *** OPERATOR CONTROLS ***
+
+    // Intake controls
+    operator.a().whileTrue(new IntakeSubstation(true, arm, drive, gripper, objectiveTracker));
+    operator.x().whileTrue(new IntakeSubstation(false, arm, drive, gripper, objectiveTracker));
+    operator
+        .b()
+        .and(() -> objectiveTracker.gamePiece == GamePiece.CUBE)
+        .whileTrue(new IntakeCubeHandoff(cubeIntake, arm, gripper, objectiveTracker));
+    var coneIntakeTrigger = operator.b().and(() -> objectiveTracker.gamePiece == GamePiece.CONE);
+    coneIntakeTrigger.onTrue(
+        new IntakeConeHandoff(
+            coneIntake, arm, gripper, objectiveTracker, coneIntakeTrigger::getAsBoolean));
+    operator
+        .rightTrigger(0.0)
+        .whileTrue(
+            new IntakeAlongFloor(
+                true, arm, gripper, objectiveTracker, operator::getRightTriggerAxis));
+    operator
+        .leftTrigger(0.0)
+        .whileTrue(
+            new IntakeAlongFloor(
+                false, arm, gripper, objectiveTracker, operator::getLeftTriggerAxis));
+    operator.rightTrigger().onTrue(new EjectHeld(true, arm, gripper));
+    operator.leftTrigger().whileTrue(new EjectHeld(false, arm, gripper));
+
+    // Objective tracking controls
+    operator
+        .leftBumper()
+        .onTrue(
+            Commands.runOnce(() -> objectiveTracker.gamePiece = GamePiece.CONE)
+                .ignoringDisable(true));
+    operator
+        .rightBumper()
+        .onTrue(
+            Commands.runOnce(() -> objectiveTracker.gamePiece = GamePiece.CUBE)
+                .ignoringDisable(true));
+    operator.povUp().whileTrue(objectiveTracker.shiftNodeCommand(Direction.UP));
+    operator.povRight().whileTrue(objectiveTracker.shiftNodeCommand(Direction.RIGHT));
+    operator.povDown().whileTrue(objectiveTracker.shiftNodeCommand(Direction.DOWN));
+    operator.povLeft().whileTrue(objectiveTracker.shiftNodeCommand(Direction.LEFT));
+
+    // Manual arm controls
+    new Trigger(
+            () ->
+                Math.abs(operator.getLeftX()) > DriveWithJoysticks.deadband
+                    || Math.abs(operator.getLeftY()) > DriveWithJoysticks.deadband
+                    || Math.abs(operator.getRawAxis(3)) > DriveWithJoysticks.deadband)
+        .whileTrue(
+            new MoveArmWithJoysticks(
+                arm,
+                () -> operator.getLeftX(),
+                () -> -operator.getLeftY(),
+                () -> -operator.getRawAxis(3)));
+    operator.leftStick().onTrue(Commands.runOnce(() -> arm.runPath(ArmPose.Preset.HOMED), arm));
   }
 
   /** Passes the autonomous command to the {@link Robot} class. */
