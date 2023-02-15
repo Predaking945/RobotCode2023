@@ -7,14 +7,18 @@
 
 package org.littletonrobotics.frc2023.commands;
 
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj2.command.CommandBase;
 import org.littletonrobotics.frc2023.Constants;
 import org.littletonrobotics.frc2023.FieldConstants;
 import org.littletonrobotics.frc2023.subsystems.drive.Drive;
+import org.littletonrobotics.frc2023.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2023.util.LoggedTunableNumber;
+
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj2.command.CommandBase;
 
 public class ChargeStationAutoBalance extends CommandBase {
   private final Drive drive;
@@ -79,16 +83,34 @@ public class ChargeStationAutoBalance extends CommandBase {
     // P controller
     double driveSpeedAfterPID = pidController.calculate(chargeStationAngle);
 
-    // check boundaries for left of charge station
-    if (drive.getPose().getX() <= FieldConstants.Community.chargingStationLeftY
-        && driveSpeedAfterPID < 0) {
-      driveSpeedAfterPID = 0;
-    }
+    // charge station limits
+    double chargeStationInnerX = AllianceFlipUtil.apply(FieldConstants.Community.chargingStationInnerX);
+    double chargeStationOuterX = AllianceFlipUtil.apply(FieldConstants.Community.chargingStationOuterX);
+    
+    // speed limits depending on alliance
+    if (DriverStation.getAlliance() == Alliance.Blue) {
+      // check boundaries for left of charge station
+      if (drive.getPose().getX() <= chargeStationInnerX && driveSpeedAfterPID < 0) {
+        driveSpeedAfterPID = 0;
+      }
 
-    // check boundaries for right of charge station
-    if (drive.getPose().getX() <= FieldConstants.Community.chargingStationRightY
-        && driveSpeedAfterPID > 0) {
-      driveSpeedAfterPID = 0;
+      // check boundaries for right of charge station
+      if (drive.getPose().getX() > chargeStationOuterX
+          && driveSpeedAfterPID > 0) {
+        driveSpeedAfterPID = 0;
+      }
+    }else {
+      // check boundaries for left of charge station
+      if (drive.getPose().getX() <= chargeStationInnerX && driveSpeedAfterPID > 0) 
+      {
+        driveSpeedAfterPID = 0;
+      }
+
+      // check boundaries for right of charge station
+      if (drive.getPose().getX() > chargeStationOuterX
+          && driveSpeedAfterPID < 0) {
+        driveSpeedAfterPID = 0;
+      }
     }
 
     // command drive subsystem
