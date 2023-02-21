@@ -15,7 +15,8 @@ public class LedsIOBlinkin implements LedsIO {
   private static final Map<LedMode, BlinkinLedMode> modeLookup = new HashMap<>();
 
   static {
-    modeLookup.put(LedMode.INTAKING, BlinkinLedMode.SOLID_BLUE);
+    modeLookup.put(LedMode.INTAKING_CUBE, BlinkinLedMode.SOLID_BLUE_VIOLET);
+    modeLookup.put(LedMode.INTAKING_CONE, BlinkinLedMode.SOLID_GOLD);
   }
 
   private final BlinkinLedDriver blinkin;

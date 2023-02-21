@@ -23,6 +23,7 @@ public interface LedsIO {
     DISABLED_NEUTRAL,
     DISABLED_RED,
     DISABLED_BLUE,
-    INTAKING
+    INTAKING_CUBE,
+    INTAKING_CONE
   }
 }
