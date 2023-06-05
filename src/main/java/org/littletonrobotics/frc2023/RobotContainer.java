@@ -93,7 +93,7 @@ public class RobotContainer {
   private final OverrideSwitches overrides = new OverrideSwitches(5);
   private final Trigger robotRelative = new Trigger(() -> true);
   private final Trigger armDisable = overrides.driverSwitch(1);
-  private final Trigger armCoast = overrides.driverSwitch(2);
+  private final Trigger armCoast = new Trigger(() -> true);
   private final Trigger hpDoubleSubstationSwitch = overrides.multiDirectionSwitchLeft();
   private final Trigger hpThrowGamePieceSwitch = overrides.multiDirectionSwitchRight();
   private final Trigger manualDrive = new Trigger(() -> true);
@@ -380,7 +380,7 @@ public class RobotContainer {
       new Alert("WPI field selected, do not use in competition.", AlertType.INFO).set(true);
     }
     new Alert(
-            "Some overrides force enabled: Robot Relative, Manual Drive, and Prefer Front",
+            "Some overrides force enabled: Robot Relative, Arm Coast, Manual Drive, and Prefer Front",
             AlertType.INFO)
         .set(true);
 

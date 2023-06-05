@@ -259,9 +259,9 @@ public class Leds extends VirtualSubsystem {
     }
 
     // Arm coast alert
-    if (armCoast) {
-      solid(Section.STATIC, Color.kWhite);
-    }
+    // if (armCoast) {
+    //   solid(Section.STATIC, Color.kWhite);
+    // }
 
     // Arm estop alert
     if (armEstopped) {
