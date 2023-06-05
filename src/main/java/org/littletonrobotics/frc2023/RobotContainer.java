@@ -91,14 +91,14 @@ public class RobotContainer {
   private final CommandXboxController driver = new CommandXboxController(0);
   private final CommandXboxController operator = new CommandXboxController(1);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
-  private final Trigger robotRelative = overrides.driverSwitch(0);
+  private final Trigger robotRelative = new Trigger(() -> true);
   private final Trigger armDisable = overrides.driverSwitch(1);
   private final Trigger armCoast = overrides.driverSwitch(2);
   private final Trigger hpDoubleSubstationSwitch = overrides.multiDirectionSwitchLeft();
   private final Trigger hpThrowGamePieceSwitch = overrides.multiDirectionSwitchRight();
-  private final Trigger manualDrive = overrides.operatorSwitch(0);
+  private final Trigger manualDrive = new Trigger(() -> true);
   private final Trigger autoEject = overrides.operatorSwitch(1);
-  private final Trigger preferFront = overrides.operatorSwitch(2);
+  private final Trigger preferFront = new Trigger(() -> true);
   private final Trigger forcePregenPaths = overrides.operatorSwitch(3);
   private final Trigger forceGripperEnable = overrides.operatorSwitch(4);
   private final Alert driverDisconnected =
@@ -379,6 +379,10 @@ public class RobotContainer {
     if (FieldConstants.isWPIField) {
       new Alert("WPI field selected, do not use in competition.", AlertType.INFO).set(true);
     }
+    new Alert(
+            "Some overrides force enabled: Robot Relative, Manual Drive, and Prefer Front",
+            AlertType.INFO)
+        .set(true);
 
     // Endgame alerts
     new Trigger(
